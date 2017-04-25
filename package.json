@@ -1,5 +1,9 @@
 {
   "dependencies": {
+    "bcrypt": "^1.0.2",
+    "express": "^4.15.2",
+    "jade": "^1.11.0",
+    "md5": "^2.2.1",
     "server-static": "^1.8.0"
   },
   "name": "imooc",
