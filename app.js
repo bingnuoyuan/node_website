@@ -1,6 +1,7 @@
 var express = require('express')
 var path = require('path')  //需要取到静态资源（css，js）的路径,告诉express到bower_components下去查找
 var mongoose = require('mongoose')   //引入mongoose模块 用来连接本地数据库
+var mongoStore = require('connect-mongo')(express)
 var _ = require('underscore') //里面有方法用新的字段替换掉老的字段
 var Movie = require('./models/movie')  //加载模型
 var User = require('./models/User')  //加载模型
@@ -9,8 +10,9 @@ var app = express()
 var serverStatic = require('serve-static') // 新版express4中，要独立安装static，npm install serve-static --save
 var bodyParser = require('body-parser')  //bodyParser 已经不再与Express捆绑，需要独立安装。
 
+var dbUrl = 'mongodb://localhost/imooc'
 mongoose.Promise = global.Promise
-mongoose.connect('mongodb://localhost/imooc') //连接到本地数据库
+mongoose.connect(dbUrl) //连接到本地数据库
 
 
 
@@ -22,7 +24,16 @@ app.set('view engine','jade')  //设置默认的模板引擎为jade
 //app.use(express.bodyParse())
 app.use(bodyParser.urlencoded({extended: true}))
 /*app.use(express.static(path.join(_dirname,'bower_components')))*/ // express4中static方法需要独立加载
+
 app.use(serverStatic('public'))
+app.use(express.cookieParser())
+app.use(express.session({
+	secret:'imooc',
+	store: new mongoStore({
+		url:dbUrl,
+		collection:'sessions'
+	})
+}))
 //express.static 静态资源的获取
 //_dirname 当前的目录
 
@@ -43,6 +54,8 @@ console.log('imooc stared on port'+port)  //打印日志，在控制台看服务
 
 //index page
 app.get('/',function(req,res){
+	console.log('user in session: ')
+	console.log(req.session.user)
 	Movie.fetch(function(err,movies){  //在回调方法里拿到返回的movies
 		if(err){
 			console.log(err)
@@ -78,7 +91,7 @@ app.post('/user/singup',function(req,res) {
 })
 
 //signin
-app.post('/user/signin',function(req,res){
+app.post('/user/singin',function(req,res){
 	var _user = req.body.user
 	var name = _user.name
 	var password = _user.password
@@ -95,7 +108,7 @@ app.post('/user/signin',function(req,res){
 				console.log(err)
 			}
 			if(isMatch){
-				console.log('Password is not matched')
+				req.session.user = user
 				return res.redirect('/')
 			}else{
 				console.log('Password is not matched')
